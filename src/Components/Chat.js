@@ -6,14 +6,32 @@ import MoreVert from '@mui/icons-material/MoreVert';
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 import InsertEmoticonOutlinedIcon from '@mui/icons-material/InsertEmoticonOutlined';
 import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
+import { useParams } from 'react-router-dom';
+import { db } from '../firebaseConfig';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 function Chat() {
     const [seed, setSeed] = useState('');
     const [input, setInput] = useState('');
+    const { roomId } = useParams();
+    const [roomName, setRoomName] = useState('');
+
+    useEffect(() => {
+        if (roomId) {
+            const roomDocRef = doc(db, "rooms", roomId);
+            onSnapshot(roomDocRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    setRoomName(snapshot.data().name);
+                } else {
+                    console.log("No such document!");
+                }
+            });
+        }
+    }, [roomId])
 
     useEffect(() => {
         setSeed(Math.floor(Math.random() * 5000))
-    }, [])
+    }, [roomId])
 
     const sendMessage = (event) => {
         event.preventDefault();
@@ -27,7 +45,7 @@ function Chat() {
                     src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}`}
                 />
                 <div className='chat__headerInfo'>
-                    <h3>Room name</h3>
+                    <h3>{roomName}</h3>
                     <p>Last seen at ...</p>
                 </div>
                 <div className='chat__headerRight'>
