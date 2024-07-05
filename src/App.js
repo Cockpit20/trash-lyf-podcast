@@ -1,21 +1,30 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import HomePage from './Components/HomePage';
+import Login from './Components/Login';
 import Sidebar from './Components/Sidebar';
 import './App.css'
 import AppPage from './Components/AppPage';
+import { useState } from 'react'
+import { useStateValue } from './StateProvider';
 
 function App() {
+  const [{ user }, dispatch] = useStateValue();
+
   return (
     <div className='app'>
-      <div className='app__body'>
-        <Router>
-          <Routes>
-            <Route path='/' element={<HomePage />} />
-            <Route path='/app' element={<Sidebar />} />
-            <Route path='/rooms/:roomId' element={<AppPage />} />
-          </Routes>
-        </Router>
-      </div>
+
+      {!user ? (
+        <Login />
+      ) : (
+        <div className='app__body'>
+          <Router>
+            <Routes>
+              <Route path='/' element={<Sidebar />} />
+              <Route path='/rooms/:roomId' element={<AppPage />} />
+            </Routes>
+          </Router>
+        </div>
+      )}
+
     </div>
 
   );

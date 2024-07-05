@@ -8,13 +8,16 @@ import InsertEmoticonOutlinedIcon from '@mui/icons-material/InsertEmoticonOutlin
 import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
 import { useParams } from 'react-router-dom';
 import { db } from '../firebaseConfig';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { collection, orderBy, query, doc, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useStateValue } from '../StateProvider';
 
 function Chat() {
     const [seed, setSeed] = useState('');
     const [input, setInput] = useState('');
     const { roomId } = useParams();
     const [roomName, setRoomName] = useState('');
+    const [messages, setMessages] = useState([]);
+    const [{ user }, dispatch] = useStateValue();
 
     useEffect(() => {
         if (roomId) {
@@ -26,6 +29,14 @@ function Chat() {
                     console.log("No such document!");
                 }
             });
+
+            const messagesCollectionRef = collection(db, 'rooms', roomId, 'messages');
+            const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
+
+            onSnapshot(q, (snapshot) => {
+                const messages = snapshot.docs.map((doc) => doc.data());
+                setMessages(messages);
+            });
         }
     }, [roomId])
 
@@ -35,7 +46,13 @@ function Chat() {
 
     const sendMessage = (event) => {
         event.preventDefault();
-        alert(`You typed >>> ${input}`);
+        // alert(`You typed >>> ${input}`);
+        addDoc(collection(doc(db, "rooms", roomId), "messages"), {
+            message: input,
+            name: user.displayName,
+            timestamp: serverTimestamp(),
+        });
+        setInput("");
     }
 
     return (
@@ -46,7 +63,12 @@ function Chat() {
                 />
                 <div className='chat__headerInfo'>
                     <h3>{roomName}</h3>
-                    <p>Last seen at ...</p>
+                    <p>Last seen at{" "}
+                        {new Date(messages[messages.length - 1]?.timestamp?.toDate()).toLocaleTimeString('en-GB', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false,
+                        })}</p>
                 </div>
                 <div className='chat__headerRight'>
                     <IconButton>
@@ -61,12 +83,21 @@ function Chat() {
                 </div>
             </div>
             <div className='chat__body'>
-                <p className={`chat__message ${true && 'chat__receiver'}`}>
-                    <span className='chat__name'>Cockpit02</span>
-                    Hey Guys
-                    <span className='chat__timestamp'>17:14</span>
-                </p>
-                <p className='chat__message'>Hey Guys</p>
+                {
+                    messages.map((message) => {
+                        return <p className={`chat__message ${message.name === user.displayName && 'chat__receiver'}`}>
+                            <span className='chat__name'>{message.name}</span>
+                            {message.message}
+                            <span className='chat__timestamp'>{new Date(message.timestamp?.toDate()).toLocaleTimeString('en-GB', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false,
+                            })}</span>
+                        </p>
+                    })
+                }
+
+                {/* <p className='chat__message'>Hey Guys</p> */}
 
             </div>
             <div className='chat__footer'>
